@@ -8,7 +8,26 @@ import { Pointer } from './Pointer'
 import { GestureGuide } from './GestureGuide'
 import { SettingsModal } from './SettingsModal'
 
-const statusText: Record<Phase, string> = {
+function isTurkish(): boolean {
+  try {
+    const raw = localStorage.getItem('framio_jarvis_settings')
+    if (raw) return JSON.parse(raw).language?.startsWith('tr')
+  } catch {}
+  return true
+}
+
+const statusTextTr: Record<Phase, string> = {
+  offline: 'ÇEVRİMDIŞI',
+  boot: 'SİSTEM BAŞLATILIYOR',
+  dormant: 'BEKLEMEDE — “HEY JARVIS” DEYİN',
+  waking: 'ÇEVRİMİÇİ',
+  listening: 'DİNLİYOR…',
+  thinking: 'İŞLENİYOR…',
+  tooling: 'SİSTEMLERE ERİŞİLİYOR',
+  speaking: 'YANITLANIYOR',
+}
+
+const statusTextEn: Record<Phase, string> = {
   offline: 'OFFLINE',
   boot: 'INITIALISING',
   dormant: 'STANDBY — SAY “HEY JARVIS”',
@@ -18,6 +37,8 @@ const statusText: Record<Phase, string> = {
   tooling: 'ACCESSING SYSTEMS',
   speaking: 'RESPONDING',
 }
+
+const getStatusText = (phase: Phase) => (isTurkish() ? statusTextTr[phase] : statusTextEn[phase])
 
 function Corner({ at }: { at: 'tl' | 'tr' | 'bl' | 'br' }) {
   return <div className={`corner corner-${at}`} />
@@ -211,7 +232,7 @@ export function Hud() {
                   the right thing to show during boot — as a general fallback a
                   note that never got cleared (a stuck 'voice 97%') sits over
                   LISTENING and PROCESSING for the rest of the session. */}
-              {phase === 'boot' && bootNote ? bootNote : statusText[phase]}
+              {phase === 'boot' && bootNote ? bootNote : getStatusText(phase)}
             </span>
           </div>
         </div>
@@ -322,11 +343,19 @@ export function Hud() {
 
       <footer className="hud-bottom">
         <span className="hint">
-          say <b>“hey jarvis”</b> · <kbd>Space</kbd> to talk · <kbd>G</kbd> hands
+          {isTurkish() ? (
+            <>
+              <b>“hey jarvis”</b> deyin · <kbd>Space</kbd> konuş · <kbd>S</kbd> ayarlar · <kbd>G</kbd> el takibi
+            </>
+          ) : (
+            <>
+              say <b>“hey jarvis”</b> · <kbd>Space</kbd> talk · <kbd>S</kbd> settings · <kbd>G</kbd> hands
+            </>
+          )}
           {voice && (
             <>
               {' · '}
-              <kbd>V</kbd> voice: {voice.replace(/\(.*?\)/g, '').trim()}
+              <kbd>V</kbd> {isTurkish() ? 'ses' : 'voice'}: {voice.replace(/\(.*?\)/g, '').trim()}
             </>
           )}
         </span>

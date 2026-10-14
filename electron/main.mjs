@@ -17,6 +17,30 @@ const isDev = !app.isPackaged || process.env.NODE_ENV === 'development'
 const BRIDGE_PORT = 8787
 const FRONTEND_PORT = 5173
 
+import fs from 'node:fs'
+
+// Load .env.local if present
+function loadLocalEnv() {
+  const envPath = path.join(__dirname, '..', '.env.local')
+  const envVars = {}
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n')
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+      const idx = trimmed.indexOf('=')
+      if (idx > 0) {
+        const k = trimmed.slice(0, idx).trim()
+        const v = trimmed.slice(idx + 1).trim()
+        envVars[k] = v
+      }
+    }
+  }
+  return envVars
+}
+
+const localEnv = loadLocalEnv()
+
 // Start the bridge (Node backend)
 function startBridge() {
   const bridgePath = path.join(__dirname, '..', 'bridge', 'server.mjs')
@@ -25,6 +49,7 @@ function startBridge() {
   bridgeProcess = spawn(process.execPath, [bridgePath], {
     env: {
       ...process.env,
+      ...localEnv,
       ELECTRON_RUN_AS_NODE: '1',
       JARVIS_ALLOWED_ORIGINS: `http://localhost:${FRONTEND_PORT},http://127.0.0.1:${FRONTEND_PORT}`,
       JARVIS_ALLOW_NO_ORIGIN: '1',
@@ -99,6 +124,13 @@ function createWindow() {
   })
 
   // Grant microphone & camera permissions automatically
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    if (permission === 'media') {
+      callback(true)
+      return
+    }
+    callback(false)
+  })
   session.defaultSession.setPermissionCheckHandler((webContents, permission) => {
     if (permission === 'media') return true
     return false
