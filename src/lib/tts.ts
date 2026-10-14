@@ -206,20 +206,31 @@ function score(v: SpeechSynthesisVoice): number {
 
 /** Only voices that scored on a name match, not merely on being English —
  *  otherwise the picker cycles through a dozen US novelty voices. */
-const USABLE = 40
-
-/** Best-first list of usable voices — also what the voice picker cycles. */
-export function candidateVoices(): SpeechSynthesisVoice[] {
-  return speechSynthesis
-    .getVoices()
-    .filter((v) => /^en/i.test(v.lang))
+/** Best-first list of usable voices — supports English and Turkish. */
+export function candidateVoices(langFilter?: string): SpeechSynthesisVoice[] {
+  const all = speechSynthesis.getVoices()
+  if (langFilter) {
+    const prefix = langFilter.slice(0, 2).toLowerCase()
+    return all.filter((v) => v.lang.toLowerCase().startsWith(prefix))
+  }
+  return all
     .map((v) => ({ v, s: score(v) }))
-    .filter((x) => x.s >= USABLE)
     .sort((a, b) => b.s - a.s)
     .map((x) => x.v)
 }
 
 let cachedVoice: SpeechSynthesisVoice | null | undefined
+
+export function setVoiceByName(name: string): SpeechSynthesisVoice | null {
+  const all = speechSynthesis.getVoices()
+  const hit = all.find((v) => v.name === name)
+  if (hit) {
+    cachedVoice = hit
+    localStorage.setItem(VOICE_PREF_KEY, hit.name)
+    return hit
+  }
+  return null
+}
 
 function pickVoice(): SpeechSynthesisVoice | null {
   if (cachedVoice !== undefined) return cachedVoice
@@ -236,7 +247,26 @@ function pickVoice(): SpeechSynthesisVoice | null {
     localStorage.removeItem(VOICE_PREF_KEY)
   }
 
-  cachedVoice = candidateVoices()[0] ?? all.find((v) => /^en/i.test(v.lang)) ?? null
+  // Check saved language
+  try {
+    const settingsRaw = localStorage.getItem('framio_jarvis_settings')
+    if (settingsRaw) {
+      const parsed = JSON.parse(settingsRaw)
+      if (parsed.voiceName) {
+        const custom = all.find((v) => v.name === parsed.voiceName)
+        if (custom) return (cachedVoice = custom)
+      }
+      if (parsed.language) {
+        const prefix = parsed.language.slice(0, 2).toLowerCase()
+        const langHit = all.find((v) => v.lang.toLowerCase().startsWith(prefix))
+        if (langHit) return (cachedVoice = langHit)
+      }
+    }
+  } catch {
+    /* fallback to default */
+  }
+
+  cachedVoice = all.find((v) => /^tr/i.test(v.lang)) ?? all.find((v) => /^en/i.test(v.lang)) ?? all[0] ?? null
   return cachedVoice
 }
 
@@ -477,15 +507,23 @@ export function createSpeaker(): Speaker {
       const u = new SpeechSynthesisUtterance(text)
       const voice = pickVoice()
       if (voice) u.voice = voice
-      u.lang = voice?.lang ?? 'en-GB'
-      // Deliberate, and deliberately invariant — the character's pace does not
-      // change with stakes, and that steadiness is most of the effect. This
-      // lands around 130 wpm, below the median for film dialogue.
-      u.rate = 0.92
-      // Mid-baritone, and *not* pushed lower for gravitas. The voice is
-      // clarity-weighted rather than chest-weighted; dropping it further reads
-      // as a film-trailer voiceover, which is the wrong character entirely.
-      u.pitch = 0.95
+
+      let customRate = 0.95
+      let customPitch = 0.95
+      try {
+        const sRaw = localStorage.getItem('framio_jarvis_settings')
+        if (sRaw) {
+          const s = JSON.parse(sRaw)
+          if (s.voiceRate) customRate = s.voiceRate
+          if (s.voicePitch) customPitch = s.voicePitch
+        }
+      } catch {
+        /* fallback */
+      }
+
+      u.lang = voice?.lang ?? (localStorage.getItem('framio_jarvis_settings')?.includes('tr') ? 'tr-TR' : 'en-GB')
+      u.rate = customRate
+      u.pitch = customPitch
 
       // speechSynthesis exposes no amplitude, so drive the reactor from a
       // synthetic envelope. It only has to look like speech, not match it.

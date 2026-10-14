@@ -63,11 +63,11 @@ const newId = () =>
 
 /** The same mishearings voice.ts accepts for the wake word — otherwise a turn
  *  that woke him as "travis" gets that word sent on to the model as a question. */
-const NAME = '(?:jarvis|jarvys|jervis|travis|jarviss|java\'s|jarv)'
+const NAME = '(?:jarvis|jarvys|jervis|travis|jarviss|java\'s|jarv|carvis|servis)'
 /** A bare vocative — "Jarvis", "hey jarvis" — with nothing asked. */
-const BARE_NAME = new RegExp(`^(?:hey|hi|ok|okay|yo)?\\s*${NAME}[\\s,.!?]*$`, 'i')
+const BARE_NAME = new RegExp(`^(?:hey|hi|ok|okay|yo|merhaba|selam)?\\s*${NAME}[\\s,.!?]*$`, 'i')
 /** A leading vocative on a real command: "Jarvis, what's the weather". */
-const LEADING_NAME = new RegExp(`^(?:hey|hi|ok|okay|yo)?\\s*${NAME}\\b[\\s,.:!?-]*`, 'i')
+const LEADING_NAME = new RegExp(`^(?:hey|hi|ok|okay|yo|merhaba|selam)?\\s*${NAME}\\b[\\s,.:!?-]*`, 'i')
 
 export default function App() {
   const store = useStore
@@ -651,10 +651,21 @@ export default function App() {
         return
       }
 
-      // Escape stands the whole thing down — the one thing the old build had
-      // no key for at all.
+      // S opens / closes settings modal
+      if ((e.key === 's' || e.key === 'S') && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault()
+        const cur = store.getState().settingsOpen
+        store.getState().setSettingsOpen(!cur)
+        return
+      }
+
+      // Escape stands the whole thing down or closes settings
       if (e.key === 'Escape') {
         e.preventDefault()
+        if (store.getState().settingsOpen) {
+          store.getState().setSettingsOpen(false)
+          return
+        }
         if (store.getState().phase !== 'offline') goDormant()
         return
       }

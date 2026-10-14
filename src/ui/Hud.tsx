@@ -6,6 +6,7 @@ import { BladeSweep, Blades } from './Blades'
 import { Effects } from './Effects'
 import { Pointer } from './Pointer'
 import { GestureGuide } from './GestureGuide'
+import { SettingsModal } from './SettingsModal'
 
 const statusText: Record<Phase, string> = {
   offline: 'OFFLINE',
@@ -195,15 +196,24 @@ export function Hud() {
           </div>
         )}
 
-        <div className="status">
-          <span className="dot" />
-          <span className="status-text">
-            {/* bootNote is the voice-model download readout. It is only ever
-                the right thing to show during boot — as a general fallback a
-                note that never got cleared (a stuck 'voice 97%') sits over
-                LISTENING and PROCESSING for the rest of the session. */}
-            {phase === 'boot' && bootNote ? bootNote : statusText[phase]}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', pointerEvents: 'auto' }}>
+          <button
+            className="hud-settings-btn"
+            onClick={() => useStore.getState().setSettingsOpen(true)}
+            title="Ayarlar & Özelleştirme (S)"
+          >
+            ⚙ AYARLAR
+          </button>
+          <div className="status">
+            <span className="dot" />
+            <span className="status-text">
+              {/* bootNote is the voice-model download readout. It is only ever
+                  the right thing to show during boot — as a general fallback a
+                  note that never got cleared (a stuck 'voice 97%') sits over
+                  LISTENING and PROCESSING for the rest of the session. */}
+              {phase === 'boot' && bootNote ? bootNote : statusText[phase]}
+            </span>
+          </div>
         </div>
       </header>
 
@@ -336,6 +346,7 @@ export function Hud() {
         </div>
       )}
       <GestureGuide live={gestures} />
+      <SettingsModal />
     </div>
   )
 }

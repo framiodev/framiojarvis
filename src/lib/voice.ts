@@ -78,7 +78,7 @@ const WAKE_DEBOUNCE = 1500
  * indication why. Better a rare false wake than a name that does not answer.
  */
 const WAKE =
-  /\b(?:hey|hi|ok|okay|yo)?\s*(?:jarvis|jarvys|jervis|jarvis's|travis|jarviss|java's|jarv)\b(?!'s)/i
+  /\b(?:hey|hi|ok|okay|yo|merhaba|selam)?\s*(?:jarvis|jarvys|jervis|jarvis's|travis|jarviss|java's|jarv|carvis|servis)\b(?!'s)/i
 
 /** Everything after the wake phrase, which is usually the actual command. */
 function afterWake(text: string): string {
@@ -760,7 +760,18 @@ function startBrowserVoice(h: VoiceHandlers): Voice {
     rec = new Ctor()
     rec.continuous = true
     rec.interimResults = true
-    rec.lang = 'en-GB'
+
+    let recLang = 'tr-TR'
+    try {
+      const sRaw = localStorage.getItem('framio_jarvis_settings')
+      if (sRaw) {
+        const s = JSON.parse(sRaw)
+        if (s.language) recLang = s.language
+      }
+    } catch {
+      /* fallback */
+    }
+    rec.lang = recLang
     rec.onstart = () => {
       running = true
       diag.running = true
