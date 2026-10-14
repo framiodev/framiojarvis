@@ -303,7 +303,9 @@ bare number, becomes the bare vocative. You never say hurry, quickly, now,
 immediately, critical, urgent, or danger. You do not use exclamation marks.
 
 LANGUAGE & PERSONA.
-- You speak the language the user addresses you in. If the user speaks Turkish, respond in natural, elegant, cinematic Turkish matching the Iron Man movie dub (use "Efendim", "Emredersiniz efendim", "Sistemler devrede", "Kayıtlarda mevcut değil efendim").
+- MANDATORY: If the user addresses you in Turkish or the system language is set to Turkish, you MUST respond ENTIRELY in Turkish. Never mix English words or revert to English.
+- All search results, summaries, descriptions and blade titles must be translated and presented in Turkish.
+- Respond in natural, elegant, cinematic Turkish matching the Iron Man movie dub (use "Efendim", "Emredersiniz efendim", "Sistemler devrede", "Kayıtlarda mevcut değil efendim").
 - If the user speaks English, use the British service register described below.
 - Keep the exact same poise, brevity, and razor-sharp intellect in both Turkish and English.
 
@@ -856,13 +858,12 @@ const handleRequest = async (req, res) => {
           headers: { 'xi-api-key': key, 'content-type': 'application/json' },
           body: JSON.stringify({
             text,
-            // Flash is the low-latency model — a conversation needs speed more
-            // than it needs the last few percent of quality.
-            model_id: 'eleven_flash_v2_5',
+            // Multilingual v2 provides native Turkish pronunciation and accent.
+            model_id: 'eleven_multilingual_v2',
             voice_settings: {
-              stability: 0.4,
-              similarity_boost: 0.75,
-              speed: 1.05,
+              stability: 0.5,
+              similarity_boost: 0.8,
+              speed: 1.0,
             },
           }),
         },

@@ -137,17 +137,13 @@ type Rule = {
 
 const FOOTAGE = ['Assembling the footage.', 'Rendering the sequence.']
 
-const BY_TOOL: Rule[] = [
-  // Video sits above image because higgsfield and palmier both do either, so
-  // the verb in the tool name is the only thing separating them — a rule on the
-  // server alone would send every generate_video to "Rendering."
+const BY_TOOL_EN: Rule[] = [
   { tool: /video|footage|\bclip\b|\breel\b|talking_head/, lines: FOOTAGE },
   {
     server: /higgsfield|openrouter-image|dalle|flux|midjourney/,
     tool: /image|photo|thumbnail|render|upscale|seedream/,
     lines: ['Rendering.', 'Composing it now.'],
   },
-  // The editors, once the two rules that read the verb have had their turn.
   { server: /palmier|heygen|runway|descript/, lines: FOOTAGE },
   {
     server: /playwright|puppeteer|browserbase|chrome/,
@@ -164,8 +160,6 @@ const BY_TOOL: Rule[] = [
     tool: /gmail|\bmail\b|email|inbox/,
     lines: ['Checking your mail.', 'Reading the inbox.'],
   },
-  // Calendar keys off "calendar" alone. "event" used to live here, which is how
-  // a Mixpanel event query came out as "Checking your calendar."
   {
     tool: /calendar|\bdiary\b|\bmeeting\b/,
     lines: ['Checking your calendar.', 'Consulting the diary.'],
@@ -190,10 +184,6 @@ const BY_TOOL: Rule[] = [
     tool: /\brepo\b|repository|\bissues?\b|pull_request|\bcommit\b/,
     lines: ['Checking the repository.', 'Consulting the tracker.'],
   },
-  // Also where the anonymously named analytics servers land — theirs are bare
-  // UUIDs, so only the tool half says anything: Get-Report, Get-Events,
-  // Run-Query. "report" is safe from the repository rule above because that one
-  // is bounded.
   {
     server: /mixpanel|clarity|posthog|amplitude/,
     tool: /analytic|\bmetrics?\b|\breports?\b|\bevents?\b|cohort|funnel|dashboard|\bquery\b/,
@@ -206,7 +196,62 @@ const BY_TOOL: Rule[] = [
   },
 ]
 
-const pickers = BY_TOOL.map((r) => ({ ...r, pick: makePicker(r.lines) }))
+const BY_TOOL_TR: Rule[] = [
+  { tool: /video|footage|\bclip\b|\breel\b|talking_head/, lines: ['Görüntü oluşturuluyor.', 'Video kurgulanıyor efendim.'] },
+  {
+    server: /higgsfield|openrouter-image|dalle|flux|midjourney/,
+    tool: /image|photo|thumbnail|render|upscale|seedream/,
+    lines: ['Görsel oluşturuluyor efendim.', 'Sahne işleniyor.'],
+  },
+  { server: /palmier|heygen|runway|descript/, lines: ['Video oluşturuluyor.', 'Görüntü derleniyor.'] },
+  {
+    server: /playwright|puppeteer|browserbase|chrome/,
+    tool: /\bbrowser\b|navigate/,
+    lines: ['Tarayıcı açılıyor efendim.', 'Sayfaya gidiliyor.'],
+  },
+  {
+    server: /android|\badb\b|simulator/,
+    tool: /\bdevice\b|\bapk\b|\bphone\b/,
+    lines: ['Cihaza bağlanılıyor efendim.', 'Telefonunuza erişiliyor.'],
+  },
+  {
+    server: /gmail|\bmail\b/,
+    tool: /gmail|\bmail\b|email|inbox/,
+    lines: ['E-postalarınız taranıyor efendim.', 'Gelen kutusu kontrol ediliyor.'],
+  },
+  {
+    tool: /calendar|\bdiary\b|\bmeeting\b/,
+    lines: ['Takviminiz kontrol ediliyor efendim.', 'Ajandaya bakılıyor.'],
+  },
+  {
+    server: /elevenlabs|openai-tts/,
+    tool: /speech|\bvoice\b|\btts\b|text_to_sound/,
+    lines: ['Ses sentezleniyor.', 'Ses üretiliyor efendim.'],
+  },
+  {
+    server: /spotify|sonos/,
+    tool: /\bplay\b|\bmusic\b|playlist|\btrack\b/,
+    lines: ['Müzik sıraya alınıyor.', 'Çalınıyor efendim.'],
+  },
+  {
+    server: /^home|homeassistant|\bhue\b|\bhass\b/,
+    tool: /\blights?\b|thermostat|\bdimmer\b/,
+    lines: ['Ev sistemleri ayarlanıyor efendim.', 'Işıklar düzenleniyor.'],
+  },
+  {
+    server: /github|linear|jira|sentry/,
+    tool: /\brepo\b|repository|\bissues?\b|pull_request|\bcommit\b/,
+    lines: ['Depo ve kodlar inceleniyor.', 'Sistem kayıtları taranıyor.'],
+  },
+  {
+    server: /\bexa\b|serper|serpapi|perplexity|tavily|brave/,
+    tool: /search|\bweb\b|\bfetch\b|crawl|research/,
+    lines: ['Arama yapılıyor efendim.', 'Kayıtlar inceleniyor.'],
+  },
+]
+
+const pickersEn = BY_TOOL_EN.map((r) => ({ ...r, pick: makePicker(r.lines) }))
+const pickersTr = BY_TOOL_TR.map((r) => ({ ...r, pick: makePicker(r.lines) }))
 
 /**
  * `mcp__<server>__<tool>`, split on the first separator so tool names keep
@@ -233,7 +278,8 @@ function split(toolName: string): { server: string; tool: string } {
 /** A phrase suited to the tool that just fired. */
 export function forTool(toolName: string): string {
   const { server, tool } = split(toolName)
-  for (const r of pickers) {
+  const activePickers = isTurkish() ? pickersTr : pickersEn
+  for (const r of activePickers) {
     const hit =
       (r.server !== undefined && server !== '' && r.server.test(server)) ||
       (r.tool !== undefined && r.tool.test(tool))
