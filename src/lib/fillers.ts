@@ -17,8 +17,19 @@
  *     so it goes at the end, and only sometimes.
  */
 
+function isTurkish(): boolean {
+  try {
+    const raw = localStorage.getItem('framio_jarvis_settings')
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return parsed.language?.startsWith('tr')
+    }
+  } catch {}
+  return true // default to Turkish
+}
+
 /** Said as soon as the first tool fires, before any answer exists. */
-const WORKING = [
+const WORKING_EN = [
   'Working on it, sir.',
   'Compiling.',
   'Retrieving.',
@@ -29,8 +40,19 @@ const WORKING = [
   'Under way.',
 ]
 
+const WORKING_TR = [
+  'Üzerinde çalışıyorum efendim.',
+  'Veriler derleniyor.',
+  'Sistemler taranıyor.',
+  'Arşive erişiliyor efendim.',
+  'Kayıtlar karşılaştırılıyor.',
+  'Sorgu yürütülüyor.',
+  'Aranıyor efendim.',
+  'İşlem devam ediyor.',
+]
+
 /** Acknowledging an order where no tool is involved. */
-const ACKNOWLEDGE = [
+const ACKNOWLEDGE_EN = [
   'As you wish, sir.',
   'Very good, sir.',
   'Certainly.',
@@ -39,8 +61,16 @@ const ACKNOWLEDGE = [
   'Directly, sir.',
 ]
 
+const ACKNOWLEDGE_TR = [
+  'Emredersiniz efendim.',
+  'Anlaşıldı efendim.',
+  'Elbette.',
+  'Halloldu bilin efendim.',
+  'Hemen ilgileniyorum efendim.',
+]
+
 /** Answering to his name, before the user has said what they want. */
-const ATTENTION = [
+const ATTENTION_EN = [
   'Yes, sir?',
   'Sir?',
   'At your service, sir.',
@@ -48,9 +78,16 @@ const ATTENTION = [
   'Awake, sir.',
 ]
 
+const ATTENTION_TR = [
+  'Evet efendim?',
+  'Sizi dinliyorum efendim.',
+  'Emrinizdeyim efendim.',
+  'Hazırım efendim.',
+  'Buyrun efendim.',
+]
+
 /**
- * Avoids repeating the same phrase twice running, which is what makes canned
- * lines sound canned. Keeps one slot of history per pool.
+ * Avoids repeating the same phrase twice running.
  */
 function makePicker(pool: string[]) {
   let last = -1
@@ -63,9 +100,16 @@ function makePicker(pool: string[]) {
   }
 }
 
-export const working = makePicker(WORKING)
-export const acknowledge = makePicker(ACKNOWLEDGE)
-export const attention = makePicker(ATTENTION)
+const pickWorkingEn = makePicker(WORKING_EN)
+const pickWorkingTr = makePicker(WORKING_TR)
+const pickAckEn = makePicker(ACKNOWLEDGE_EN)
+const pickAckTr = makePicker(ACKNOWLEDGE_TR)
+const pickAttnEn = makePicker(ATTENTION_EN)
+const pickAttnTr = makePicker(ATTENTION_TR)
+
+export const working = () => (isTurkish() ? pickWorkingTr() : pickWorkingEn())
+export const acknowledge = () => (isTurkish() ? pickAckTr() : pickAckEn())
+export const attention = () => (isTurkish() ? pickAttnTr() : pickAttnEn())
 
 /**
  * Naming the task is warmer than a generic acknowledgement and shows the
